@@ -1,0 +1,9 @@
+{
+  "id": 1,
+  "id_customer": 1,
+  "from": "Porto Alegre - RS",
+  "to": "São Paulo - SP",
+  "initial_value": 130.0,
+  "amount": 300.0,
+  "amount_type": "TON"
+}
