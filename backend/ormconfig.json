@@ -1,0 +1,19 @@
+{
+  "type": "postgres",
+  "host": "172.17.0.2",
+  "port": 5432,
+  "username": "goflux",
+  "password": "goflux",
+  "database": "goflux",
+  "synchronize": true,
+  "logging": false,
+  "maxQueryExecutionTime": 1000,
+  "entities": ["src/entity/**/*.ts"],
+  "migrations": ["src/database/migrations/**/*.ts"],
+  "subscribers": ["src/database/subscriber/**/*.ts"],
+  "cli": {
+    "entitiesDir": "src/models",
+    "migrationsDir": "src/database/migrations",
+    "subscribersDir": "src/database/subscriber"
+  }
+}
