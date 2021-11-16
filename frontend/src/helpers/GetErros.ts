@@ -1,6 +1,5 @@
 import { toast } from "react-toastify";
 export const showErrors = (errors: any) => {
-  console.log(errors);
   if (errors) {
     (errors as { [key: string]: string }[]).forEach((errorObj) => {
       for (let key in errorObj) {

@@ -1,9 +1,11 @@
 import React from "react";
 import RouterLink from "../../../component/RouterLink";
+import { useAuth } from "../../../context/Auth";
 
 import { Container } from "./styles";
 
 const NavBar: React.FC = () => {
+  const { user } = useAuth();
   return (
     <Container>
       <nav>
@@ -14,14 +16,13 @@ const NavBar: React.FC = () => {
               Ofertas
             </RouterLink>
           </li>
-        </ul>
-        <h1>Configurações</h1>
-        <ul>
-          <li>
-            <RouterLink to="configs" activeClass="active">
-              Usuário
-            </RouterLink>
-          </li>
+          {user?.type === "provider" && (
+            <li>
+              <RouterLink to="proposals" activeClass="active">
+                Propostas
+              </RouterLink>
+            </li>
+          )}
         </ul>
       </nav>
     </Container>

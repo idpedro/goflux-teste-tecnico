@@ -12,7 +12,6 @@ const OfferList = () => {
   const navigateTo = useNavigate();
   const [offers, setOffers] = useState<TypeOffer[]>([]);
   const [count, setCount] = useState<number>(0);
-  const [itensPerPage, setItensPerPage] = useState<number>(10);
   const [page, setPage] = useState<number>(1);
   const { getOffer } = useOffersApi();
 
@@ -21,7 +20,7 @@ const OfferList = () => {
   }, []);
 
   useEffect(() => {
-    const response = getOffer(page, itensPerPage);
+    const response = getOffer(page, 10);
     response
       .then((offersResponse) => {
         const { count, offers } = offersResponse;
@@ -32,7 +31,7 @@ const OfferList = () => {
         showErrors(error);
         navigateTo("/login");
       });
-  }, [getOffer, itensPerPage, navigateTo, page]);
+  }, [getOffer, navigateTo, page]);
   return (
     <Container>
       <Header />
@@ -40,7 +39,7 @@ const OfferList = () => {
       <Pagination
         total={count}
         getPageFunction={handlerGetPage}
-        itensPerPage={itensPerPage}
+        itensPerPage={10}
         page={page}
       />
     </Container>

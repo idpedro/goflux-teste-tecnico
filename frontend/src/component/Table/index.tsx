@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import RouterLink from "../RouterLink";
+import { v4 as uuid } from "uuid";
+import { MouseEvent } from "react";
 
-import { Table, THead, Tbody } from "./styles";
+import RouterLink from "../RouterLink";
+import { Table, THead, Tbody, ActionButton, colorsNames } from "./styles";
 
 export type TableItem = { [key: string]: any };
 
@@ -11,15 +13,23 @@ export type TableColumn<T> = {
   isLink?: boolean;
   linkPath?: string;
   type?: "curreny" | "decimal" | "date";
+  keyReference?: keyof T;
   formater?: (data: any) => any;
 };
 
+export type TableActions = {
+  name?: string;
+  icon: React.ReactNode;
+  color?: colorsNames;
+  callback: (any: any) => (e: MouseEvent<HTMLButtonElement>) => void;
+};
 interface TableProps {
   columnsDefinition: TableColumn<any>[];
   items?: TableItem[];
+  actions?: TableActions[];
 }
 
-const TableComponent = ({ columnsDefinition, items }: TableProps) => {
+const TableComponent = ({ columnsDefinition, actions, items }: TableProps) => {
   const [columns, setColumns] = useState<TableColumn<TableItem>[]>();
   const [data, setData] = useState<TableItem[]>();
 
@@ -41,23 +51,25 @@ const TableComponent = ({ columnsDefinition, items }: TableProps) => {
       <Tbody>
         {data &&
           data.map((d, index) => (
-            <tr key={index}>
+            <tr key={d.id ?? uuid()}>
               {columns &&
                 columns.map((column) => {
                   const data = !column.formater
                     ? d?.[column.propriety as string]
                     : column.formater(d?.[column.propriety as string]);
-                  const index = column.propriety;
+                  // const index = column.propriety;
                   return (
                     <td
-                      key={`${column.propriety}__${index}`}
+                      key={`${column.propriety}__${d.id ?? uuid()}`}
                       className={column.isLink ? "link" : ""}
                     >
                       {column.isLink ? (
                         <RouterLink
-                          to={`${
-                            column.linkPath ? column.linkPath + "/" : ""
-                          }${data}`}
+                          to={`${column.linkPath ? column.linkPath + "/" : ""}${
+                            column.keyReference
+                              ? d?.[column.keyReference]
+                              : data
+                          }`}
                         >
                           {data}
                         </RouterLink>
@@ -67,6 +79,19 @@ const TableComponent = ({ columnsDefinition, items }: TableProps) => {
                     </td>
                   );
                 })}
+              {actions &&
+                actions.map((action) => (
+                  <td key={uuid()} className="action">
+                    <ActionButton
+                      key={uuid()}
+                      color={action.color ?? "purple"}
+                      onClick={action.callback(d)}
+                    >
+                      {action.name && <span>{action.name}</span>}
+                      {action.icon}
+                    </ActionButton>
+                  </td>
+                ))}
             </tr>
           ))}
       </Tbody>

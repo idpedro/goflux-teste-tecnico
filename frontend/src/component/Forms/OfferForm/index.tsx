@@ -40,6 +40,7 @@ export const OfferForm = ({ offer }: OfferFormProps) => {
           name="initial_value"
           type={"number"}
           placeholder="...900"
+          step={"any"}
           defaultValue={offer?.initial_value}
           required
         />
@@ -48,6 +49,7 @@ export const OfferForm = ({ offer }: OfferFormProps) => {
           <Input
             title="Peso"
             name="amount"
+            step={"any"}
             type={"number"}
             placeholder="...130"
             defaultValue={offer?.amount}
@@ -62,14 +64,10 @@ export const OfferForm = ({ offer }: OfferFormProps) => {
 
         {offer?.status && (
           <SelectArea>
-            <Select
-              title="Status"
-              name={"amount_type"}
-              defaultValue={offer?.status}
-            >
+            <Select title="Status" name={"status"} defaultValue={offer?.status}>
               <option value="active">Ativo</option>
               <option value="closed">Finalizado</option>
-              <option value="validate">Validado</option>
+              <option value="validated">Validado</option>
             </Select>
           </SelectArea>
         )}

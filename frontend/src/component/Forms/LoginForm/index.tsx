@@ -38,7 +38,7 @@ const LoginForm: React.FC = () => {
           icon={<LockIcon />}
           required
         />
-        <Switch name="keep" />
+        <Switch name="keep" text="Manter Conectado ?" />
         <Button title="Login" type="submit" color="red" icon={<LogInIcon />} />
       </FormContextProvider>
     </Container>

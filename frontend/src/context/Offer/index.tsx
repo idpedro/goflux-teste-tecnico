@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext } from "react";
 import Axios from "axios";
 import { Api } from "../../services/Api";
-import { toast } from "react-toastify";
 import { ProposalType } from "../Proposal";
 
 export enum EnumOfferStatus {
@@ -36,7 +35,10 @@ interface OfferContextProps {
   createOffer: (
     offerData: Pick<TypeOffer, "amount" | "to" | "from" | "amount_type">
   ) => Promise<{ message: string }>;
-
+  updateOffer: (
+    id: number,
+    offerData: Pick<TypeOffer, "amount" | "to" | "from" | "amount_type">
+  ) => Promise<TypeOffer>;
   getOfferById: (id: number) => Promise<TypeOffer>;
 }
 
@@ -85,6 +87,30 @@ const OfferProvider = ({ children }: OfferProviderProps) => {
     []
   );
 
+  const update = useCallback(
+    (
+      id,
+      {
+        ...offerData
+      }: Pick<TypeOffer, "amount" | "to" | "from" | "amount_type">
+    ) => {
+      return new Promise<TypeOffer>(async (resolve, reject) => {
+        try {
+          const response = await Api.put<TypeOffer>(
+            `${baseUrl}/${id}`,
+            offerData
+          );
+          const { data } = response;
+          resolve(data);
+        } catch (error) {
+          if (Axios.isAxiosError(error)) reject(error.response?.data.errors);
+          else return error;
+        }
+      });
+    },
+    []
+  );
+
   const getById = useCallback((id: number) => {
     return new Promise<TypeOffer>(async (resolve, reject) => {
       try {
@@ -100,7 +126,12 @@ const OfferProvider = ({ children }: OfferProviderProps) => {
 
   return (
     <OfferContext.Provider
-      value={{ getOffer: get, createOffer: create, getOfferById: getById }}
+      value={{
+        getOffer: get,
+        createOffer: create,
+        getOfferById: getById,
+        updateOffer: update,
+      }}
     >
       {children}
     </OfferContext.Provider>
@@ -108,8 +139,9 @@ const OfferProvider = ({ children }: OfferProviderProps) => {
 };
 
 const useOffersApi = () => {
-  const { getOffer, createOffer, getOfferById } = useContext(OfferContext);
-  return { getOffer, createOffer, getOfferById };
+  const { getOffer, createOffer, getOfferById, updateOffer } =
+    useContext(OfferContext);
+  return { getOffer, createOffer, getOfferById, updateOffer };
 };
 
 export { useOffersApi, OfferProvider };

@@ -1,12 +1,11 @@
-import React, { ButtonHTMLAttributes, ReactElement } from "react";
-import { StyledIcon } from "@styled-icons/styled-icon";
+import React, { ButtonHTMLAttributes } from "react";
 
 import { ButtonStyled, colorsNames } from "./styles";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  icon?: ReactElement<StyledIcon>;
+  icon?: React.ReactNode;
   color: colorsNames;
-  title: string;
+  title?: string;
 }
 
 const Button = ({ title, icon, color, ...rest }: ButtonProps) => {

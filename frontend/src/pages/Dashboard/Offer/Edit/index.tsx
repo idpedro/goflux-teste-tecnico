@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import OfferForm from "../../../../component/Forms/OfferForm";
-import Table from "../../../../component/Table";
 import { FormContextProvider } from "../../../../context/FormContext";
 import { TypeOffer, useOffersApi } from "../../../../context/Offer";
 import { showErrors } from "../../../../helpers/GetErros";
@@ -11,7 +11,7 @@ import { Container } from "./styles";
 const Edit: React.FC = () => {
   const { id } = useParams();
   const [offer, getOffer] = useState<TypeOffer>();
-  const { getOfferById } = useOffersApi();
+  const { getOfferById, updateOffer } = useOffersApi();
   useEffect(() => {
     if (id && !isNaN(Number(id))) {
       const response = getOfferById(Number(id));
@@ -25,9 +25,14 @@ const Edit: React.FC = () => {
     }
   }, [getOfferById, id]);
 
-  const handlerFormSubmit = useCallback((data) => {
-    console.log(data);
-  }, []);
+  const handlerFormSubmit = useCallback(
+    (data) => {
+      updateOffer(Number(id), data)
+        .then((data) => toast.success("Oferta Atualizada"))
+        .catch((error) => showErrors(error));
+    },
+    [id, updateOffer]
+  );
   return (
     <Container>
       <h1>Editando Oferta</h1>

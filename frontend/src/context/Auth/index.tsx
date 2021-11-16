@@ -10,6 +10,8 @@ import {
   useCallback,
 } from "react";
 import { Api } from "../../services/Api";
+import { showErrors } from "../../helpers/GetErros";
+import Axios from "axios";
 
 interface UserFormProps {
   email: string;
@@ -87,9 +89,8 @@ export const AuthContextProvider = ({ children }: AuthContextProviderProps) => {
       setIsAuth(true);
       return true;
     } catch (error: any) {
-      if (error.response.status === 401)
-        toast.warning("Usuário ou senha invalidos");
-      else toast.error("Erro ao logar no sistema");
+      if (Axios.isAxiosError(error)) showErrors(error.response?.data.errors);
+      else console.log(error.message);
     }
   };
 

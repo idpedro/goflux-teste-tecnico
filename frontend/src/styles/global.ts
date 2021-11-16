@@ -13,7 +13,8 @@ export default createGlobalStyle`
   --flux-purple-500: #5d5fef;
   --flux-red-500: #EA0029;
   --flux-white: #FFFFFF;
-
+  
+  --flux-green-500: #009688;
 
   --button-red: #EA0029;
   --button-text-red: #fff;

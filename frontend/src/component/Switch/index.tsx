@@ -6,8 +6,9 @@ import { Container, Input } from "./styles";
 interface SwitchProps {
   checked?: boolean;
   name: string;
+  text: string;
 }
-const Switch = ({ checked = false, name }: SwitchProps) => {
+const Switch = ({ checked = false, text, name }: SwitchProps) => {
   const { register } = useForm();
 
   const ref = useRef<HTMLInputElement>(null);
@@ -23,7 +24,7 @@ const Switch = ({ checked = false, name }: SwitchProps) => {
         defaultChecked={checked ? true : false}
         ref={ref}
       />
-      <span>Manter Conectado ? </span>
+      <span>{text}</span>
     </Container>
   );
 };

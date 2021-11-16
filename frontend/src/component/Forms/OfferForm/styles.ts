@@ -17,10 +17,8 @@ export const InputArea = styled.div`
 
 export const SelectArea = styled.div`
   display: flex;
-  align-items: center;
   height: auto;
   align-items: stretch;
-
   > input {
     width: 100%;
   }
