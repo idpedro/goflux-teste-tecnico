@@ -36,6 +36,12 @@ export class createTableProposals1636666746798 implements MigrationInterface {
             unsigned: true,
           },
           {
+            name: "value",
+            type: "double precision",
+            unsigned: true,
+            isNullable: false,
+          },
+          {
             name: "amount",
             type: "double precision",
             unsigned: true,

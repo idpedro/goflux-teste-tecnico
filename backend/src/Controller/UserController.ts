@@ -5,6 +5,8 @@ import { UserRepository } from "../repositories/UserRepository";
 import { UserFactory } from "../factories/UserFactory";
 import { ProposalsRepository } from "../repositories/ProposalsRepository";
 import JWTService, { JWTPayload } from "../services/jwt";
+import { UserType } from "../entity/User";
+import { OffersRepository } from "../repositories/OffersRepository";
 class UserController {
   private user: JWTPayload;
   constructor() {}
@@ -20,7 +22,7 @@ class UserController {
     } catch (error) {
       return response
         .status(500)
-        .json({ message: "Erro ao carregar os Usuárioes" });
+        .json({ errors: [{ message: "Erro ao carregar os Usuárioes" }] });
     }
   }
 
@@ -43,7 +45,9 @@ class UserController {
     });
 
     if (cantFind)
-      return response.status(400).json({ message: "O Usuário já existe" });
+      return response
+        .status(400)
+        .json({ errors: [{ message: "O Usuário já existe" }] });
 
     try {
       newUser.password = await hash(newUser.password, 8);
@@ -55,7 +59,9 @@ class UserController {
             "Erro ao salvar o usuário, verifique os campos e tente novamente",
           detail: error.message,
         });
-      response.status(500).json({ message: "Erro Interno ao salvar registro" });
+      response
+        .status(500)
+        .json({ errors: [{ message: "Erro Interno ao salvar registro" }] });
     }
     return response.status(201).json(newUser);
   }
@@ -84,7 +90,9 @@ class UserController {
     console.log(findUser);
 
     if (!findUser)
-      return response.status(400).json({ message: "O Usuário não encontrado" });
+      return response
+        .status(400)
+        .json({ errors: [{ message: "O Usuário não encontrado" }] });
 
     const newUserData = request.body;
     let userToBeUpdated;
@@ -147,7 +155,7 @@ class UserController {
     } catch (error) {
       return response
         .status(500)
-        .json({ message: "Erro ao carregar os Usuárioes" });
+        .json({ errors: [{ message: "Erro ao carregar os Usuárioes" }] });
     }
   }
 
@@ -161,13 +169,13 @@ class UserController {
       if (!findUser)
         return response
           .status(404)
-          .json({ message: "O Usuário não encontrado" });
+          .json({ errors: [{ message: "O Usuário não encontrado" }] });
 
       response.json(findUser);
     } catch (error) {
       return response
         .status(500)
-        .json({ message: "Não foi possivel buscar o usuário" });
+        .json({ errors: [{ message: "Não foi possivel buscar o usuário" }] });
     }
   }
 
@@ -180,13 +188,13 @@ class UserController {
       if (!findUsers.length)
         return response
           .status(404)
-          .json({ message: "Registros não encontrados" });
+          .json({ errors: [{ message: "Registros não encontrados" }] });
 
       response.json(findUsers);
     } catch (error) {
       return response
         .status(500)
-        .json({ message: "Não foi possivel buscar o registros" });
+        .json({ errors: [{ message: "Não foi possivel buscar o registros" }] });
     }
   }
 
@@ -196,26 +204,37 @@ class UserController {
     const findUser = await repository.findOne(this.user.id);
 
     if (!findUser)
-      return response
-        .status(404)
-        .json({ message: "O Usuario não encontrado para a remoção" });
+      return response.status(404).json({
+        errors: [{ message: "O Usuario não encontrado para a remoção" }],
+      });
 
-    const proposalRepository = getCustomRepository(ProposalsRepository);
-
+    const isProvider = findUser.type === UserType.PROVIDER;
+    const associatedRepository = getCustomRepository(
+      isProvider ? ProposalsRepository : OffersRepository
+    );
     try {
-      const [_, proposalsCount] = await proposalRepository.findAndCount({
+      const [_, associatedCount] = await associatedRepository.findAndCount({
         where: { user: findUser },
       });
-      if (proposalsCount > 0) {
-        return response
-          .status(400)
-          .json({ message: "O Usuario ainda tem propostas em aberto" });
+      if (associatedCount > 0) {
+        return response.status(400).json({
+          message: `O Usuario ainda tem ${
+            isProvider ? "propostas" : "ofertas"
+          } em aberto`,
+        });
       }
-      const { affected } = await repository.delete(findUser);
+
+      await repository.remove(findUser);
+
       response
         .status(200)
-        .json({ message: `${affected} Usuario Removido com sucesso` });
-    } catch (error) {}
+        .json({ errors: [{ message: `Usuario Removido com sucesso` }] });
+    } catch (error) {
+      console.log(error);
+      return response
+        .status(500)
+        .json({ erros: [{ server_error: "Erro ao deleta o úsuario" }] });
+    }
   }
 }
 

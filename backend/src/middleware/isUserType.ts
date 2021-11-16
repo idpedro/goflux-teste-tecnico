@@ -24,6 +24,7 @@ function isUserType(type: string) {
     next: NextFunction
   ) => {
     const user = await getUser(request);
+    console.log(user);
     if (!user) {
       return response.status(401).json({
         message: "Não foi possivel localizar o usuário",

@@ -11,7 +11,7 @@ import {
 } from "typeorm";
 import { User } from "./User";
 import { Proposal } from "./Proposal";
-import { IsNotEmpty, IsNumber, NotEquals } from "class-validator";
+import { IsEnum, IsNotEmpty, IsNumber, NotEquals } from "class-validator";
 import { Transform } from "class-transformer";
 
 export enum AmountType {

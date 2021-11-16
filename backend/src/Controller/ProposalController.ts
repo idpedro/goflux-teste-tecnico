@@ -3,13 +3,17 @@ import { Request, Response } from "express";
 import JWTServices from "../services/jwt";
 
 import { ProposalFactory } from "../factories/ProposalFactory";
-import { Proposal } from "./../entity/Proposal";
+import { Proposal, StatusProposalsEnum } from "./../entity/Proposal";
 import { ProposalsRepository } from "../repositories/ProposalsRepository";
 
 import { UserRepository } from "../repositories/UserRepository";
 import { OffersRepository } from "../repositories/OffersRepository";
-import { UserType } from "../entity/User";
+import { User, UserType } from "../entity/User";
 import { StatusOffersEnum } from "./../entity/Offer";
+
+type Optional<T> = {
+  [P in keyof Required<T>]?: T[P];
+};
 
 class ProposalController {
   private getUser(request: Request) {
@@ -20,16 +24,22 @@ class ProposalController {
   }
 
   async index(request: Request, response: Response) {
+    const { page, itensPerPage } = request.query;
+    const take = itensPerPage ? Number(itensPerPage) : 10;
+    const skip = page && Number(page) > 1 ? Number(page) * take : 0;
     let user;
     try {
       user = this.getUser(request);
     } catch (error: any) {
-      return response.status(401).json({ message: error.message });
+      return response
+        .status(401)
+        .json({ errors: [{ message: error.message }] });
     }
 
     const findOptions: FindManyOptions<Proposal> = {
-      take: 10,
+      take,
       relations: ["user", "offer"],
+      skip,
     };
     if (user.type === UserType.PROVIDER) {
       findOptions.where = { user: user.id };
@@ -39,9 +49,9 @@ class ProposalController {
       const proposals = await proposalRepository.findAndCount(findOptions);
       return response.json(proposals);
     } catch (error) {
-      return response
-        .status(500)
-        .json({ message: "Não foi possivel  pegar os registros" });
+      return response.status(500).json({
+        errors: [{ message: "Não foi possivel  pegar os registros" }],
+      });
     }
   }
 
@@ -50,10 +60,12 @@ class ProposalController {
     try {
       user = this.getUser(request);
     } catch (error: any) {
-      return response.status(401).json({ message: error.message });
+      return response
+        .status(401)
+        .json({ errors: [{ message: error.message }] });
     }
 
-    const { id_offer, ...proposal } = request.body;
+    const { offer, ...proposal } = request.body;
 
     let newProposal;
     try {
@@ -74,7 +86,7 @@ class ProposalController {
       if (!findUser)
         return response.status(401).json({ messge: "Usuário não encontrado" });
 
-      const findOffer = await offersRepository.findOne(id_offer);
+      const findOffer = await offersRepository.findOne(offer);
       if (!findOffer)
         return response.status(401).json({ messge: "Oferta não encontrada" });
       if (findOffer.status === StatusOffersEnum.CLOSED) {
@@ -83,15 +95,22 @@ class ProposalController {
           .json({ messge: "Esta oferta ja  foi finalizada" });
       }
 
+      if (newProposal.amount > findOffer.amount)
+        return response.status(401).json({
+          errors: [
+            { messge: "A Carga da proposta e maior que a carga oferta" },
+          ],
+        });
+
       try {
         const existPropToOffert = await proposalsRepository.findOne({
           user: findUser,
           offer: findOffer,
         });
         if (existPropToOffert)
-          response
-            .status(400)
-            .json({ message: "Você já lançou propostas para essa oferta" });
+          return response.status(400).json({
+            errors: [{ message: "Você já lançou propostas para essa oferta" }],
+          });
       } catch (error) {}
 
       newProposal.user = findUser;
@@ -108,17 +127,18 @@ class ProposalController {
 
   async update(request: Request, response: Response) {
     const { id } = request.params;
+    const proposal: Optional<Proposal> = request.body;
     const jwtPayload = JWTServices.getPayload(request);
 
     if (!id || isNaN(Number(id)))
       return response
         .status(404)
-        .json({ message: "O id da oferta é Invalido" });
+        .json({ errors: [{ message: "O id da oferta é Invalido" }] });
 
     if (!jwtPayload)
-      return response
-        .status(401)
-        .json({ message: "Não foi possivel validar dados do usuário" });
+      return response.status(401).json({
+        errors: [{ message: "Não foi possivel validar dados do usuário" }],
+      });
 
     const { user } = jwtPayload;
 
@@ -130,23 +150,39 @@ class ProposalController {
         message: "Não foi possivel validar o usuário, Usuário não encontrado",
       });
 
+    const options: any = {};
+    if (user.type === UserType.PROVIDER) {
+      options.user = findedUser;
+    } else if (proposal.status === StatusProposalsEnum.WAITING) {
+      return response
+        .status(401)
+        .json({ errors: [{ message: "Alteração de status não permitida" }] });
+    }
+
     const proposalRepository = getCustomRepository(ProposalsRepository);
     let findedProposal;
     try {
-      findedProposal = await proposalRepository.findOne({
-        id: Number(id),
-        user: findedUser,
+      findedProposal = await proposalRepository.findOne(Number(id), {
+        ...options,
+        relations: ["offer"],
       });
     } catch (error) {
       console.log(error);
       return response
         .status(500)
-        .json({ message: "Erro ao buscar o registro" });
+        .json({ errors: [{ message: "Erro ao buscar o registro" }] });
     }
     if (!findedProposal)
-      return response.status(404).json({ message: "Proposta não encontrada" });
+      return response
+        .status(404)
+        .json({ errors: [{ message: "Proposta não encontrada" }] });
 
-    const proposal = request.body;
+    if (findedProposal.offer.status === StatusOffersEnum.CLOSED) {
+      return response
+        .status(401)
+        .json({ messge: "Esta oferta ja  foi finalizada" });
+    }
+
     let proposalToBeUpdated;
     try {
       proposalToBeUpdated = await ProposalFactory({
@@ -156,6 +192,13 @@ class ProposalController {
     } catch (error) {
       return response.status(400).json(error);
     }
+    if (user.type === UserType.PROVIDER) {
+      proposalToBeUpdated.status = findedProposal.status;
+    }
+    if (proposalToBeUpdated.amount > findedProposal.offer.amount)
+      return response.status(401).json({
+        errors: [{ message: "A Carga da proposta e maior que a carga oferta" }],
+      });
 
     try {
       const proposalUpdated = await proposalRepository.save(
@@ -173,7 +216,64 @@ class ProposalController {
     if (!id || isNaN(Number(id)))
       return response
         .status(404)
-        .json({ message: "O id da oferta é Invalido" });
+        .json({ errors: [{ message: "O id da Proposta é Invalido" }] });
+
+    const proposalRepository = getCustomRepository(ProposalsRepository);
+    let findedProposal;
+    try {
+      findedProposal = await proposalRepository.findOne(id, {
+        relations: ["user", "offer"],
+      });
+      if (!findedProposal)
+        return response
+          .status(404)
+          .json({ errors: [{ message: "registro não encontrado" }] });
+    } catch (error) {
+      console.log(error);
+      return response
+        .status(500)
+        .json({ errors: [{ message: "Erro ao buscar o registro" }] });
+    }
+    response.json(findedProposal);
+  }
+
+  async find(request: Request, response: Response) {
+    const { page, itensPerPage, ...rest } = request.query;
+
+    const take = itensPerPage ? Number(itensPerPage) : 10;
+    const skip = page && Number(page) > 1 ? Number(page) * take : 0;
+    try {
+      const result = await getCustomRepository(
+        ProposalsRepository
+      ).findAndCount({
+        take,
+        where: [rest],
+        order: { created_at: "DESC" },
+        relations: ["user", "offer"],
+        skip,
+      });
+      if (result) {
+        const filtred = result[0].map((proposal) => {
+          const { name, id } = proposal.user;
+          return { ...proposal, user: { name, id } };
+        });
+        return response.json({ proposals: filtred, count: result[1] });
+      }
+    } catch (error) {
+      console.log(error);
+      return response
+        .status(500)
+        .json({ errors: [{ message: "Erro ao carregar os Provedores" }] });
+    }
+  }
+
+  async delete(request: Request, response: Response) {
+    const { id } = request.params;
+
+    if (!id || isNaN(Number(id)))
+      return response
+        .status(404)
+        .json({ errors: [{ message: "O id da Proposta é Invalido" }] });
 
     const proposalRepository = getCustomRepository(ProposalsRepository);
     let findedProposal;
@@ -182,34 +282,14 @@ class ProposalController {
       if (!findedProposal)
         return response
           .status(404)
-          .json({ message: "registro não encontrado" });
+          .json({ errors: [{ message: "registro não encontrado" }] });
+      await proposalRepository.remove(findedProposal);
+      return response.json({ errors: [{ message: "Proposta deletada" }] });
     } catch (error) {
       console.log(error);
       return response
         .status(500)
-        .json({ message: "Erro ao buscar o registro" });
-    }
-    response.json(findedProposal);
-  }
-
-  async find(request: Request, response: Response) {
-    const { ...rest } = request.query;
-    try {
-      const result = await getCustomRepository(
-        ProposalsRepository
-      ).findAndCount({
-        take: 10,
-        where: [rest],
-        order: { created_at: "DESC" },
-      });
-      if (result) {
-        return response.json(result);
-      }
-    } catch (error) {
-      console.log(error);
-      return response
-        .status(500)
-        .json({ message: "Erro ao carregar os Provedores" });
+        .json({ errors: [{ invalid: "Erro ao buscar o registro" }] });
     }
   }
 }

@@ -15,6 +15,10 @@ ProposalRoutes.post(
 );
 ProposalRoutes.put("/:id", ProposalController.update.bind(ProposalController));
 
-// ProposalRoutes.delete("/:id", ProposalController.delete);
+ProposalRoutes.delete(
+  "/:id",
+  isUserType(UserType.PROVIDER),
+  ProposalController.delete
+);
 
 export { ProposalRoutes };

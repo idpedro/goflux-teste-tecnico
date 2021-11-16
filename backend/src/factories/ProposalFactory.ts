@@ -2,9 +2,13 @@ import { Proposal } from "./../entity/Proposal";
 import { validate } from "class-validator";
 import { ValidateError } from "../helper/ValidationErro";
 
-export async function ProposalFactory(provider: any) {
+export async function ProposalFactory({ amount, value, ...proposal }: any) {
   const newProposal = new Proposal();
-  Object.assign(newProposal, provider);
+  Object.assign(newProposal, {
+    ...proposal,
+    value: Number(value),
+    amount: Number(amount),
+  });
 
   const validationErrors = await validate(newProposal);
   const isInvalid = validationErrors.length > 0;

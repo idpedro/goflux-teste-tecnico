@@ -23,7 +23,9 @@ class OfferController {
     try {
       user = this.getUser(request);
     } catch (error: any) {
-      return response.status(401).json({ message: error.message });
+      return response
+        .status(401)
+        .json({ errors: [{ message: error.message }] });
     }
 
     const take = itemsPerPage ? Number(itemsPerPage) : 10;
@@ -33,7 +35,7 @@ class OfferController {
       skip,
       relations: ["proposals"],
       where: { status: "active" },
-      order: { id: "ASC" },
+      order: { id: "DESC" },
     };
 
     if (user.type === UserType.CUSTOMER) {
@@ -52,9 +54,9 @@ class OfferController {
       return response.json({ count, offers: offersMapped });
     } catch (error) {
       console.log(error);
-      return response
-        .status(500)
-        .json({ message: "Não foi possivel  pegar os registros" });
+      return response.status(500).json({
+        errors: [{ message: "Não foi possivel  pegar os registros" }],
+      });
     }
   }
   async create(request: Request, response: Response) {
@@ -62,7 +64,9 @@ class OfferController {
     try {
       user = this.getUser(request);
     } catch (error: any) {
-      return response.status(401).json({ message: error.message });
+      return response
+        .status(401)
+        .json({ errors: [{ message: error.message }] });
     }
 
     const offer = request.body;
@@ -101,12 +105,12 @@ class OfferController {
     if (!id || isNaN(Number(id)))
       return response
         .status(404)
-        .json({ message: "O id da oferta é Invalido" });
+        .json({ errors: [{ message: "O id da oferta é Invalido" }] });
 
     if (!jwtPayload)
-      return response
-        .status(401)
-        .json({ message: "Não foi possivel validar dados do usuário" });
+      return response.status(401).json({
+        errors: [{ message: "Não foi possivel validar dados do usuário" }],
+      });
 
     const { user } = jwtPayload;
 
@@ -129,10 +133,12 @@ class OfferController {
       console.log(error);
       return response
         .status(500)
-        .json({ message: "Erro ao buscar o registro" });
+        .json({ errors: [{ message: "Erro ao buscar o registro" }] });
     }
     if (!findedOffer)
-      return response.status(404).json({ message: "Oferta não encontrada" });
+      return response
+        .status(404)
+        .json({ errors: [{ message: "Oferta não encontrada" }] });
 
     const offer = request.body;
     let offerToBeUpdated;
@@ -141,11 +147,12 @@ class OfferController {
     } catch (error) {
       return response.status(400).json(error);
     }
-
+    console.log("pos", offerToBeUpdated);
     try {
       const offerUpdated = await offerRepository.save(offerToBeUpdated);
       response.status(200).json(offerUpdated);
     } catch (error) {
+      console.log(error);
       response.status(500).json(error);
     }
   }
@@ -155,7 +162,7 @@ class OfferController {
     if (!id || isNaN(Number(id)))
       return response
         .status(404)
-        .json({ message: "O id da oferta é Invalido" });
+        .json({ errors: [{ message: "O id da oferta é Invalido" }] });
 
     const offerRepository = getCustomRepository(OffersRepository);
     let findedOffer;
@@ -166,25 +173,28 @@ class OfferController {
       if (!findedOffer)
         return response
           .status(404)
-          .json({ message: "registro não encontrado" });
+          .json({ errors: [{ message: "registro não encontrado" }] });
     } catch (error) {
       console.log(error);
       return response
         .status(500)
-        .json({ message: "Erro ao buscar o registro" });
+        .json({ errors: [{ message: "Erro ao buscar o registro" }] });
     }
     response.json(findedOffer);
   }
   async find(request: Request, response: Response) {
-    const params = request.query;
+    const { page, itensPerPage, ...params } = request.query;
+    const take = itensPerPage ? Number(itensPerPage) : 10;
+    const skip = page && Number(page) > 1 ? Number(page) * take : 0;
     try {
       const result = await getCustomRepository(OffersRepository).findAndCount({
-        take: 10,
+        take,
         where: [
           params,
           { to: Like(`%${params.to}%`) },
           { from: Like(`%${params.from}%`) },
         ],
+        skip,
       });
       if (result) {
         return response.json(result);
@@ -192,7 +202,7 @@ class OfferController {
     } catch (error) {
       return response
         .status(500)
-        .json({ message: "Erro ao carregar as Ofertas" });
+        .json({ errors: [{ message: "Erro ao carregar as Ofertas" }] });
     }
   }
 }

@@ -32,8 +32,14 @@ export class Proposal {
   })
   status: StatusProposalsEnum;
 
-  @Column({ type: "double precision", unsigned: true })
   @Transform(({ value }) => value.trim())
+  @Column({ type: "double precision", unsigned: true })
+  @IsNotEmpty({ message: "O valor não pode ser vazio" })
+  @IsNumber({}, { message: "O valor deve ser númerio" })
+  value: number;
+
+  @Transform(({ value }) => value.trim())
+  @Column({ type: "double precision", unsigned: true })
   @IsNotEmpty({ message: "O Peso não pode ser vazio" })
   @IsNumber({}, { message: "O Peso deve ser númerio" })
   amount: number;

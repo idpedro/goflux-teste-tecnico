@@ -9,21 +9,16 @@ interface offerBody {
   amount: number;
   amount_type: string;
 }
-export async function OfferFactory({
-  to,
-  from,
-  amount,
-  initial_value,
-  amount_type,
-  ...offer
-}: offerBody) {
+export async function OfferFactory(offer: offerBody) {
+  console.log("fiter", offer);
   const newOffer = new Offer();
-
+  const { to, from, amount, initial_value, amount_type } = offer;
   Object.assign(newOffer, {
+    ...offer,
     to: to.trim(),
     from: from.trim(),
     initial_value: Number(initial_value),
-    amount: Number(initial_value),
+    amount: Number(amount),
     amount_type,
   });
 
