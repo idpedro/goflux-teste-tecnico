@@ -7,7 +7,6 @@ import {
   ReactNode,
   useState,
   useEffect,
-  useCallback,
 } from "react";
 import { Api } from "../../services/Api";
 import { showErrors } from "../../helpers/GetErros";
